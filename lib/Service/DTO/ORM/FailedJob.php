@@ -3,14 +3,14 @@
 namespace Task\Queue\Service\DTO\ORM;
 
 use Bitrix\Main\Type\Date;
-use Task\Queue\Interfaces\ORM\IJob;
+use Task\Queue\Interfaces\ORM\IFailedJob;
 
 /**
- * Описание структуры данных задачи.
+ * Описание структуры данных задачи с ошибкой.
  *
- * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
+ * @author Daniil Sholohkov <sholokhov.daniil@gmail.com>
  */
-class Job implements IJob
+class FailedJob implements IFailedJob
 {
     /**
      * Идентификатор задачи.
@@ -38,7 +38,7 @@ class Job implements IJob
      *
      * @var string
      */
-    protected string $status;
+    protected string $exception;
 
     /**
      * Дата создания задачи.
@@ -75,6 +75,16 @@ class Job implements IJob
     }
 
     /**
+     * Получение текста ошибки.
+     *
+     * @return string
+     */
+    public function getException(): string
+    {
+        return $this->exception ?? '';
+    }
+
+    /**
      * Получение параметров задачи.
      *
      * @return array
@@ -82,16 +92,6 @@ class Job implements IJob
     public function getParameters(): array
     {
         return $this->parameters ?? [];
-    }
-
-    /**
-     * Получение статуса задачи.
-     *
-     * @return string
-     */
-    public function getStatus(): string
-    {
-        return $this->status ?? '';
     }
 
     /**
@@ -151,14 +151,14 @@ class Job implements IJob
     }
 
     /**
-     * Указание статуса задачи.
+     * Указание содержимого ошибки.
      *
      * @param string $value
      * @return $this
      */
-    public function setStatus(string $value): self
+    public function setException(string $value): self
     {
-        $this->status = $value;
+        $this->exception = $value;
         return $this;
     }
 

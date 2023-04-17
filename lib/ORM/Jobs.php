@@ -17,6 +17,8 @@ use Bitrix\Main\{Entity,
 use Bitrix\Main\Type\Date;
 use Bitrix\Main\ORM\Data\{AddResult, UpdateResult};
 
+use JetBrains\PhpStorm\Pure;
+
 /**
  * ORM, для взаимодействия с очередью, которая в текущий момен обрабатывается
  * или ожидает взаимодействия.
@@ -38,27 +40,17 @@ class JobsTable extends Base
     /**
      * Код поля хранения обработчика задачи.
      */
-    protected const FIELD_TASK = "TASK";
+    public const FIELD_TASK = "TASK";
 
     /**
      * Код поля хранения статуса задачи.
      */
-    protected const FIELD_STATUS = "STATUS";
+    public const FIELD_STATUS = "STATUS";
 
     /**
      * Код поля хранения параметров задачи.
      */
-    protected const FIELD_PARAMS = "PARAMS";
-
-    /**
-     * Код поля хранения даты создания задачи.
-     */
-    protected const FIELD_DATE_CREATE = "DATE_CREATE";
-
-    /**
-     * Код поля хранения даты обновления задачи.
-     */
-    protected const FIELD_DATE_UPDATE = "DATE_UPDATE";
+    public const FIELD_PARAMS = "PARAMS";
 
     /**
      * Получение наименования таблицы с очередями.
@@ -67,7 +59,7 @@ class JobsTable extends Base
      */
     public static function getTableName(): string
     {
-        return "b_queue_jobs";
+        return "b_task_queue_jobs";
     }
 
     /**
@@ -84,14 +76,35 @@ class JobsTable extends Base
      */
     public static function getMap(): array
     {
-        return [
-            new Entity\IntegerField('ID', ['primary' => true, 'autocomplete' => true]),
+        $parent = parent::getMap();
+
+        $map = [
             new Entity\StringField(static::FIELD_TASK, []),
             new Entity\EnumField(static::FIELD_STATUS, ['values' => [static::STATUS_NEW, static::STATUS_PROCESS]]),
             new Entity\TextField(static::FIELD_PARAMS, []),
-            new Entity\DatetimeField(static::FIELD_DATE_CREATE, []),
-            new Entity\DatetimeField(static::FIELD_DATE_UPDATE, []),
         ];
+
+        return array_merge($map, $parent);
+    }
+
+    /**
+     * Добавление новой задачи.
+     *
+     * @param IJob $dto
+     * @return AddResult
+     * @throws Exception
+     */
+    public static function append(IJob $dto): AddResult
+    {
+        $fields = [
+            static::FIELD_TASK => $dto->getTask(),
+            static::FIELD_PARAMS => serialize($dto->getParameters()),
+            static::FIELD_STATUS => $dto->getStatus(),
+            static::FIELD_DATE_UPDATE => $dto->getDateUpdate(),
+            static::FIELD_DATE_CREATE => $dto->getDateCreate(),
+        ];
+
+        return parent::add($fields);
     }
 
     /**
@@ -103,7 +116,7 @@ class JobsTable extends Base
      */
     public static function add(array $data = []): AddResult
     {
-        if (empty($data['entity'])) {
+        if (empty($data['task'])) {
             throw new InvalidArgumentException('The task object was not found');
         }
 
@@ -112,9 +125,11 @@ class JobsTable extends Base
         }
 
         $fields = [
-            static::FIELD_TASK => $data['entity'],
+            static::FIELD_TASK => $data['task'],
             static::FIELD_PARAMS => serialize($data['params']),
             static::FIELD_STATUS => static::STATUS_NEW,
+            static::FIELD_DATE_UPDATE => new Date(),
+            static::FIELD_DATE_CREATE => new Date(),
         ];
 
         return parent::add($fields);
@@ -233,6 +248,7 @@ class JobsTable extends Base
      * @param string $status
      * @return bool
      */
+    #[Pure]
     public static function validateStatus(string $status): bool
     {
         switch ($status) {

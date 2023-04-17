@@ -9,7 +9,7 @@ use Bitrix\Main\Type\Date;
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
-interface IJob
+interface IFailedJob
 {
     /**
      * Получение идентификатора задачи.
@@ -37,7 +37,7 @@ interface IJob
      *
      * @return string
      */
-    public function getStatus(): string;
+    public function getException(): string;
 
     /**
      * Получение даты создания задачи.
