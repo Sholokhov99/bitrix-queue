@@ -1,7 +1,18 @@
 <?php
 
-class queue extends CModule
+/**
+ * Мастер установки модуля.
+ *
+ * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
+ */
+class task_queue extends CModule
 {
+    var $MODULE_ID = "task.queue";
+    var $MODULE_VERSION;
+    var $MODULE_VERSION_DATE;
+    var $MODULE_NAME;
+    var $MODULE_DESCRIPTION;
+
     public function __construct()
     {
         $arModuleVersion = [];
@@ -12,10 +23,10 @@ class queue extends CModule
             $this->MODULE_VERSION_DATE = $arModuleVersion["VERSION_DATE"];
         }
 
-        $this->PARTNER_NAME = "X3Group";
-        $this->PARTNER_URI = '';
-        $this->MODULE_NAME = '';
-        $this->MODULE_DESCRIPTION = '';
+        $this->PARTNER_NAME = "Daniil Sholokhov";
+        $this->PARTNER_URI = 'https://github.com/Sholokhov99';
+        $this->MODULE_NAME = 'Управления очередями';
+        $this->MODULE_DESCRIPTION = 'Производит отложенный запуск скриптов в рамках очередности.';
     }
 
     public function DoInstall() {}
