@@ -2,6 +2,7 @@
 
 namespace Task\Queue;
 
+use Bitrix\Main\Diag\Debug;
 use Error;
 use Exception;
 use InvalidArgumentException;
@@ -11,13 +12,11 @@ use Task\Queue\ORM\FailedJobsTable;
 use Task\Queue\Service\DTO\ORM\FailedJob;
 use Task\Queue\Interfaces\ORM\IJob;
 
-use Bitrix\Main\{ArgumentException,
-    ObjectPropertyException,
-    SystemException
-};
-
 /**
  * Обработчик очередей.
+ *
+ * @todo Внедрить пошаговость.
+ * @todo Внедрить логирование.
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
@@ -33,49 +32,64 @@ class Processor
     /**
      * Время выполнения одного шага.
      *
+     * Если значение менее 1, то многошаговость не применяется.
+     *
      * @var int
      */
-    protected int $timeLimit = 50;
+    protected int $timeLimit;
+
+    /**
+     * @param int $timeLimit - Время выполнения скрипта.
+     */
+    public function __construct(int $timeLimit = 0)
+    {
+        $this->timeLimit = $timeLimit;
+    }
 
     /**
      * Запуск механизма выполнения задачи.
      *
      * @return void
-     * @throws ArgumentException
-     * @throws ObjectPropertyException
-     * @throws SystemException
      */
-    public function execute()
+    public function execute(): void
     {
+        $start = microtime(true);
         $filter = [JobsTable::FIELD_STATUS => JobsTable::STATUS_NEW];
         $order = ['ID' => 'ASC'];
         $limit = $this->limit;
 
         $parameters = compact('filter', 'limit', 'order');
 
-        $jobs = JobsTable::getList($parameters);
+        try {
+            $jobs = JobsTable::getList($parameters);
 
-        foreach ($jobs as $job) {
-            $errorMessage = "";
+            foreach ($jobs as $job) {
+                $errorMessage = "";
 
-            try {
-                $this->checkTask($job);
-                call_user_func_array($job->getTask(), [$job->getParameters()]);
+                try {
+                    $this->checkTask($job);
+                    call_user_func_array($job->getTask(), [$job->getParameters()]);
+                } catch (Exception $exception) {
+                    $errorMessage = $exception->getMessage();
+                } catch (Error $error) {
+                    $errorMessage = $error->getMessage();
+                } finally {
+                    if (!empty($errorMessage)) {
+                        $failedJob = (new FailedJob())->setTask($job->getTask())
+                            ->setParameters($job->getParameters())
+                            ->setException($errorMessage);
+                        FailedJobsTable::append($failedJob);
+                    }
+                }
+
                 JobsTable::delete($job->getID());
-            } catch (Exception $exception) {
-                $errorMessage = $exception->getMessage();
-            } catch (Error $error) {
-                $errorMessage = $error->getMessage();
-            } finally {
-                if (!empty($errorMessage)) {
-                    $failedJob = (new FailedJob())->setTask($job->getTask())
-                        ->setParameters($job->getParameters())
-                        ->setException($errorMessage);
-                    FailedJobsTable::append($failedJob);
+
+                if ($this->timeLimit > 0 && microtime(true) - $start > $this->timeLimit) {
+                    break;
                 }
             }
+        } catch (Exception $exception) {
 
-            JobsTable::delete($job->getID());
         }
     }
 

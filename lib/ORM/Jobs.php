@@ -8,12 +8,7 @@ use InvalidArgumentException;
 use Task\Queue\Interfaces\ORM\IJob;
 use Task\Queue\Service\DTO\ORM\Job;
 
-
-use Bitrix\Main\{Entity,
-    ArgumentException,
-    ObjectPropertyException,
-    SystemException
-};
+use Bitrix\Main\{Entity, ArgumentException, ObjectPropertyException, SystemException};
 use Bitrix\Main\Type\Date;
 use Bitrix\Main\ORM\Data\{AddResult, UpdateResult};
 
@@ -153,10 +148,8 @@ class JobsTable extends Base
         while ($item = $iterator->fetch()) {
             $id = intval($item['ID'] ?? 0);
 
-            $parameters = [];
-
-            if (!empty($item[static::FIELD_PARAMS]) && CheckSerializedData($item[static::FIELD_PARAMS], 999)) {
-                $parameters = unserialize(static::FIELD_PARAMS);
+            if (!empty($item[static::FIELD_PARAMS])) {
+                $parameters = unserialize($item[static::FIELD_PARAMS]);
             }
 
             $job = (new Job())->setId($id)
