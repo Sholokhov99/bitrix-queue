@@ -2,7 +2,6 @@
 
 namespace Task\Queue;
 
-use Bitrix\Main\Diag\Debug;
 use Error;
 use Exception;
 use InvalidArgumentException;
