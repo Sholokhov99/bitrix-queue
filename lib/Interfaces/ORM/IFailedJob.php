@@ -9,7 +9,7 @@ use Bitrix\Main\Type\Date;
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
-interface IFailedJob
+interface IFailedJob extends IJob
 {
     /**
      * Получение идентификатора задачи.

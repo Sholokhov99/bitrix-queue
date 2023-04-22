@@ -5,7 +5,7 @@ namespace Task\Queue\Interfaces\ORM;
 use Bitrix\Main\Type\Date;
 
 /**
- * Описание структуры задачи.
+ * Модель задачи.
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */

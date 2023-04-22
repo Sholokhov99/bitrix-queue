@@ -5,33 +5,25 @@ namespace Task\Queue\ORM;
 use Exception;
 
 use Task\Queue\Interfaces\ORM\IFailedJob;
-use Task\Queue\Service\DTO\ORM\FailedJob;
+use Task\Queue\Interfaces\ORM\IJob;
 
 use Bitrix\Main\{Entity,
     ArgumentException,
     ObjectPropertyException,
     SystemException
 };
-use Bitrix\Main\ORM\Data\AddResult;
 use Bitrix\Main\Type\Date;
+use Bitrix\Main\ORM\Data\AddResult;
 
 /**
  * ORM, для взаимодействия с очередью, которая была обработана с ошибкой.
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
+ *
+ * @method static IFailedJob getFirst(array $filter = [])
  */
 class FailedJobsTable extends Base
 {
-    /**
-     * Код поля хранения обработчика.
-     */
-    public const FIELD_TASK = "TASK";
-
-    /**
-     * Код поля хранения параметров обработчика.
-     */
-    public const FIELD_PARAMS = "PARAMS";
-
     /**
      * Код поля хранения текста исключения.
      */
@@ -53,6 +45,7 @@ class FailedJobsTable extends Base
      * <li>ID - Уникальный идентификатор очереди
      * <li>TASK - Обработчик очереди
      * <li>PARAMS - Параметры задачи
+     * <li>EXCEPTION - Ошибка с которой завершилось выполнение задачи
      * <li>DATE_CREATE - Дата создания очереди
      * <li>DATE_UPDATE - Дата последнего обновления задачи
      *
@@ -63,8 +56,6 @@ class FailedJobsTable extends Base
         $parentMap = parent::getMap();
 
         $map = [
-            new Entity\StringField(static::FIELD_TASK, []),
-            new Entity\TextField(static::FIELD_PARAMS, []),
             new Entity\TextField(static::FIELD_EXCEPTION, []),
         ];
 
@@ -78,7 +69,7 @@ class FailedJobsTable extends Base
      * @return AddResult
      * @throws Exception
      */
-    public static function append(IFailedJob $dto): AddResult
+    public static function append(IJob $dto): AddResult
     {
         $fields = [
             static::FIELD_TASK => $dto->getTask(),
@@ -132,39 +123,14 @@ class FailedJobsTable extends Base
      * @throws ObjectPropertyException
      * @throws SystemException
      */
-    public static function getList(array $parameters = []): array
+    public static function getAll(array $parameters = []): array
     {
         $result = [];
-        $iterator = parent::getList($parameters);
+        $iterator = static::getList($parameters);
 
         while ($item = $iterator->fetch()) {
             $id = intval($item['ID'] ?? 0);
-
-            $parameters = [];
-
-            if (!empty($item[static::FIELD_PARAMS]) && CheckSerializedData($item[static::FIELD_PARAMS], 999)) {
-                $parameters = unserialize(static::FIELD_PARAMS);
-            }
-
-            $dto = (new FailedJob())->setId($id)
-                ->setTask($item[static::FIELD_TASK] ?? '');
-
-            if (is_array($parameters)) {
-                $dto->setParameters($parameters);
-            }
-
-            $dateCreate = $item[static::FIELD_DATE_CREATE] ?? null;
-            $dateUpdate = $item[static::FIELD_DATE_UPDATE] ?? null;
-
-            if ($dateCreate instanceof Date) {
-                $dto->setDateCreate($dateCreate);
-            }
-
-            if ($dateUpdate instanceof Date) {
-                $dto->setDateUpdate($dateUpdate);
-            }
-
-            $result[$id] = $dto;
+            $result[$id] = static::arrayToJob($item);
         }
 
         return $result;

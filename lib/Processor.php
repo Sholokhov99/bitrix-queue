@@ -2,10 +2,15 @@
 
 namespace Task\Queue;
 
+use Bitrix\Main\Diag\Debug;
+use Bitrix\Main\ObjectNotFoundException;
 use Error;
 use Exception;
+use RuntimeException;
 use InvalidArgumentException;
 
+use Task\Queue\Interfaces\Bus\IShouldQueue;
+use Task\Queue\Interfaces\Queue\IQueue;
 use Task\Queue\ORM\JobsTable;
 use Task\Queue\ORM\FailedJobsTable;
 use Task\Queue\Service\DTO\ORM\FailedJob;
@@ -38,11 +43,26 @@ class Processor
     protected int $timeLimit;
 
     /**
+     * Механизм обработки задач.
+     *
+     * @var IQueue
+     */
+    protected IQueue $queue;
+
+    /**
+     * Механизм обработки задач имеющие ошибку выполнения.
+     *
+     * @var IQueue
+     */
+    protected IQueue $queueFailed;
+
+    /**
      * @param int $timeLimit - Время выполнения скрипта.
      */
-    public function __construct(int $timeLimit = 0)
+    public function __construct(IQueue $queue, int $timeLimit = 0)
     {
         $this->timeLimit = $timeLimit;
+        $this->queue = $queue;
     }
 
     /**
@@ -53,42 +73,28 @@ class Processor
     public function execute(): void
     {
         $start = microtime(true);
-        $filter = [JobsTable::FIELD_STATUS => JobsTable::STATUS_NEW];
-        $order = ['ID' => 'ASC'];
-        $limit = $this->limit;
 
-        $parameters = compact('filter', 'limit', 'order');
+        for ($index = $this->limit; $index > 0; $index--) {
+            $errorMessage = "";
 
-        try {
-            $jobs = JobsTable::getList($parameters);
-
-            foreach ($jobs as $job) {
-                $errorMessage = "";
-
-                try {
-                    $this->checkTask($job);
-                    call_user_func_array($job->getTask(), [$job->getParameters()]);
-                } catch (Exception $exception) {
-                    $errorMessage = $exception->getMessage();
-                } catch (Error $error) {
-                    $errorMessage = $error->getMessage();
-                } finally {
-                    if (!empty($errorMessage)) {
-                        $failedJob = (new FailedJob())->setTask($job->getTask())
-                            ->setParameters($job->getParameters())
-                            ->setException($errorMessage);
-                        FailedJobsTable::append($failedJob);
-                    }
-                }
-
-                JobsTable::delete($job->getID());
-
-                if ($this->timeLimit > 0 && microtime(true) - $start > $this->timeLimit) {
-                    break;
-                }
+            try {
+                $job = $this->queue->pop();
+                $this->call($job);
+            } catch (ObjectNotFoundException $exception) {
+                break;
+            } catch (Exception $exception) {
+                $errorMessage = $exception->getMessage();
+            } catch (Error $error) {
+                $errorMessage = $error->getMessage();
             }
-        } catch (Exception $exception) {
 
+            if (!empty($errorMessage) && isset($this->queueFailed) && isset($job)) {
+                $this->error($job, $errorMessage);
+            }
+
+            if ($this->timeLimit > 0 && microtime(true) - $start > $this->timeLimit) {
+                break;
+            }
         }
     }
 
@@ -110,15 +116,68 @@ class Processor
     }
 
     /**
-     * Валидация обработчика задачи.
+     * Вызов механизма выполнения задачи.
      *
      * @param IJob $job
-     * @return void
+     * @return mixed
      */
-    protected function checkTask(IJob $job): void
+    protected function call(IJob $job)
     {
-        if (!is_callable($job->getTask())) {
-            throw new InvalidArgumentException('The task handler cannot be called');
+        $task = $job->getTask();
+
+        if (is_a($task, IShouldQueue::class, true)) {
+            return $this->callShouldQueue($job);
+        } elseif (is_callable($task)) {
+            return call_user_func($task, $job->getParameters());
         }
+
+        throw new RuntimeException('Invalid task handler');
+    }
+
+    /**
+     * Вызов обработчика согласно стандартной абстракции..
+     *
+     * @param IJob $job
+     * @return mixed
+     */
+    protected function callShouldQueue(IJob $job)
+    {
+        $task = $this->getTaskQueue($job);
+        return call_user_func([$task, 'handle'], $job->getParameters());
+    }
+
+    /**
+     * Вызов пользовательского обработчика задачи.
+     *
+     * @param IJob $job
+     * @return IShouldQueue
+     */
+    protected function getTaskQueue(IJob $job): IShouldQueue
+    {
+        $task = $job->getTask();
+
+        if (class_exists($task)) {
+            return new $task(...$job->getParameters());
+        }
+
+        throw new RuntimeException('Task queue not found');
+    }
+
+    /**
+     * Обработка ошибки во время выполнении задачи.
+     *
+     * @param IJob $job
+     * @param string $exception
+     * @return $this
+     */
+    protected function error(IJob $job, string $exception): self
+    {
+        if (method_exists($job, 'setException')) {
+            $job->setException($exception);
+        }
+
+        $this->queueFailed->push($job);
+
+        return $this;
     }
 }

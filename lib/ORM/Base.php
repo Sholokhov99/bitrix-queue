@@ -4,7 +4,17 @@ namespace Task\Queue\ORM;
 
 use Exception;
 
-use Bitrix\Main\Entity;
+use Task\Queue\Service\DTO\ORM\Job;
+use Task\Queue\Interfaces\ORM\IJob;
+use Task\Queue\Interfaces\ORM\IORM;
+
+use Bitrix\Main\{
+    Entity,
+    ArgumentException,
+    SystemException,
+    ObjectPropertyException
+};
+use Bitrix\Main\Type\Date;
 use Bitrix\Main\ORM\Data\DataManager;
 
 /**
@@ -12,8 +22,18 @@ use Bitrix\Main\ORM\Data\DataManager;
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
-class Base extends DataManager
+abstract class Base extends DataManager implements IORM
 {
+    /**
+     * Код поля хранения обработчика задачи.
+     */
+    public const FIELD_TASK = "TASK";
+
+    /**
+     * Код поля хранения параметров задачи.
+     */
+    public const FIELD_PARAMS = "PARAMS";
+
     /**
      * Код поля хранения даты создания задачи.
      */
@@ -37,9 +57,25 @@ class Base extends DataManager
     {
         return [
             new Entity\IntegerField('ID', ['primary' => true, 'autocomplete' => true]),
+            new Entity\StringField(static::FIELD_TASK, []),
+            new Entity\TextField(static::FIELD_PARAMS, []),
             new Entity\DatetimeField(static::FIELD_DATE_CREATE, []),
             new Entity\DatetimeField(static::FIELD_DATE_UPDATE, []),
         ];
+    }
+
+    /**
+     * Получение количество задач в очереди.
+     *
+     * @param $filter
+     * @param array $cache
+     * @return int
+     * @throws ObjectPropertyException
+     * @throws SystemException
+     */
+    public static function getCount($filter = [], array $cache = []): int
+    {
+        return intval(parent::getCount($filter, $cache));
     }
 
     /**
@@ -82,5 +118,63 @@ class Base extends DataManager
         } catch (Exception $e) {
         }
         return false;
+    }
+
+    /**
+     * Получение модели задачи на основе массива.
+     *
+     * @todo Переделать на нормальный механизм.
+     *
+     * @param array $data
+     * @return IJob
+     */
+    protected static function arrayToJob(array $data): IJob
+    {
+        $id = intval($data['ID'] ?? 0);
+
+        $parameters = !empty($data[static::FIELD_PARAMS]) ? unserialize($data[static::FIELD_PARAMS]) : [];
+        $task = (string)($data[static::FIELD_TASK] ?? '');
+        $dateCreate = $data[static::FIELD_DATE_CREATE] ?? null;
+        $dateUpdate = $data[static::FIELD_DATE_UPDATE] ?? null;
+
+        $job = (new Job())->setId($id)
+            ->setTask($task);
+
+        if (is_array($parameters)) {
+            $job->setParameters($parameters);
+        }
+
+        if ($dateCreate instanceof Date) {
+            $job->setDateCreate($dateCreate);
+        }
+
+        if ($dateUpdate instanceof Date) {
+            $job->setDateUpdate($dateUpdate);
+        }
+
+        return $job;
+    }
+
+    /**
+     * Получение первой задачи.
+     *
+     * @param array $filter
+     * @return IJob|null
+     * @throws ArgumentException
+     * @throws ObjectPropertyException
+     * @throws SystemException
+     */
+    public static function getFirst(array $filter = []): ?IJob
+    {
+        $order = ['ID' => 'ASC'];
+        $limit = 1;
+
+        $parameters = compact('filter', 'order', 'limit');
+
+        if ($item = static::getList($parameters)->fetch()) {
+            return static::arrayToJob($item);
+        }
+
+        return null;
     }
 }
