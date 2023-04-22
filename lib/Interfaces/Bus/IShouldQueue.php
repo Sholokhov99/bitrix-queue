@@ -2,6 +2,8 @@
 
 namespace Task\Queue\Interfaces\Bus;
 
+use Bitrix\Main\Result;
+
 /**
  * Описание структуры обработчика задачи.
  *
@@ -12,7 +14,7 @@ interface IShouldQueue
     /**
      * Запуск механизма обработки задачи.
      *
-     * @return void
+     * @return Result
      */
-    public function handle(): void;
+    public function handle(): Result;
 }

@@ -2,6 +2,7 @@
 
 namespace Task\Queue\Fakes;
 
+use Bitrix\Main\Result;
 use Task\Queue\Service\Traits\Dispatchable;
 use Task\Queue\Interfaces\Bus\IShouldQueue;
 
@@ -33,11 +34,11 @@ class FakeJob implements IShouldQueue
     /**
      * Механизм запуска выполнения задачи.
      *
-     * @return void
+     * @return Result
      */
-    public function handle(): void
+    public function handle(): Result
     {
-        // TODO: Implement handle() method.
+        return new Result();
     }
 
     /**

@@ -10,6 +10,7 @@ use Task\Queue\Interfaces\ORM\IJob;
 use Task\Queue\Interfaces\Queue\IQueue;
 use Task\Queue\Interfaces\Bus\IShouldQueue;
 
+use Bitrix\Main\Result;
 use Bitrix\Main\ObjectNotFoundException;
 
 /**
@@ -133,12 +134,12 @@ class Processor
      * Вызов обработчика согласно стандартной абстракции..
      *
      * @param IJob $job
-     * @return mixed
+     * @return Result
      */
-    protected function callShouldQueue(IJob $job)
+    protected function callShouldQueue(IJob $job): Result
     {
         $task = $this->getTaskQueue($job);
-        return call_user_func([$task, 'handle'], $job->getParameters());
+        return $task->handle();
     }
 
     /**
