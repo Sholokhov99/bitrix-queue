@@ -33,13 +33,6 @@ interface IJob
     public function getParameters(): array;
 
     /**
-     * Получение статуса задачи.
-     *
-     * @return string
-     */
-    public function getStatus(): string;
-
-    /**
      * Получение даты создания задачи.
      *
      * @return Date

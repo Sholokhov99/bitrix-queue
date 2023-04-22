@@ -34,13 +34,6 @@ class Job implements IJob
     protected array $parameters;
 
     /**
-     * Статус задачи.
-     *
-     * @var string
-     */
-    protected string $status;
-
-    /**
      * Дата создания задачи.
      *
      * @var Date
@@ -82,16 +75,6 @@ class Job implements IJob
     public function getParameters(): array
     {
         return $this->parameters ?? [];
-    }
-
-    /**
-     * Получение статуса задачи.
-     *
-     * @return string
-     */
-    public function getStatus(): string
-    {
-        return $this->status ?? '';
     }
 
     /**
@@ -147,18 +130,6 @@ class Job implements IJob
     public function setTask(string $value): self
     {
         $this->task = $value;
-        return $this;
-    }
-
-    /**
-     * Указание статуса задачи.
-     *
-     * @param string $value
-     * @return $this
-     */
-    public function setStatus(string $value): self
-    {
-        $this->status = $value;
         return $this;
     }
 
