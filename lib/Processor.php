@@ -2,6 +2,7 @@
 
 namespace Task\Queue;
 
+use Bitrix\Main\Diag\Debug;
 use Error;
 use Exception;
 use RuntimeException;
@@ -11,12 +12,15 @@ use Task\Queue\Interfaces\Queue\IQueue;
 use Task\Queue\Interfaces\Bus\IShouldQueue;
 
 use Bitrix\Main\Result;
+use Bitrix\Main\Error as BxError;
 use Bitrix\Main\ObjectNotFoundException;
 
 /**
  * Обработчик очередей.
  *
  * @todo Внедрить логирование.
+ *
+ * @see ProcessorTest - UnitTest
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
@@ -64,46 +68,73 @@ class Processor
     /**
      * Запуск механизма выполнения задачи.
      *
-     * @return void
+     * @return array
      */
-    public function execute(): void
+    public function execute(): array
     {
+        $result = [];
         $start = microtime(true);
+
 
         for ($index = $this->limit; $index > 0; $index--) {
             $errorMessage = "";
+            $errorCode = 0;
 
             try {
                 $job = $this->queue->pop();
-                $this->call($job);
+                $result[] = $this->call($job);
             } catch (ObjectNotFoundException $exception) {
+                $result[] = (new Result())->setData([$exception->getMessage()]);
                 break;
             } catch (Exception $exception) {
                 $errorMessage = $exception->getMessage();
+                $errorCode = $exception->getCode();
             } catch (Error $error) {
                 $errorMessage = $error->getMessage();
+                $errorCode = $error->getCode();
             }
 
-            if (!empty($errorMessage) && isset($this->queueFailed) && isset($job)) {
-                $this->error($job, $errorMessage);
+            if (!empty($errorMessage)) {
+                if (isset($this->queueFailed) && isset($job)) {
+                    $this->error($job, $errorMessage);
+                }
+                $result[] = (new Result())->addError(new BxError($errorMessage, $errorCode));
             }
 
             if ($this->timeLimit > 0 && microtime(true) - $start > $this->timeLimit) {
                 break;
             }
         }
+
+        return $result;
+    }
+
+    /**
+     * Получение лимита при выборке задач.
+     *
+     * @see ProcessorTest::testGetLimit()
+     *
+     * @return int
+     */
+    public function getLimit(): int
+    {
+        return $this->limit ?? 0;
     }
 
     /**
      * Указание лимита при выборке задач.
+     *
+     * @see ProcessorTest::testSetLimit()
+     * @see ProcessorTest::testSetLimitNatural()
+     * @see ProcessorTest::testSetLimitNegative()
      *
      * @param int $value
      * @return $this
      */
     public function setLimit(int $value): self
     {
-        if ($value <= 0) {
-            $value = 1;
+        if ($value < 0) {
+            $value = 0;
         }
 
         $this->limit = $value;
@@ -124,7 +155,7 @@ class Processor
         if (is_a($task, IShouldQueue::class, true)) {
             return $this->callShouldQueue($job);
         } elseif (is_callable($task)) {
-            return call_user_func($task, $job->getParameters());
+            return call_user_func_array($task, $job->getParameters());
         }
 
         throw new RuntimeException('Invalid task handler');

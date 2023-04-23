@@ -3,6 +3,7 @@
 namespace Task\Queue\ORM;
 
 use Exception;
+use InvalidArgumentException;
 
 use Task\Queue\Service\DTO\ORM\Job;
 use Task\Queue\Interfaces\ORM\IJob;
