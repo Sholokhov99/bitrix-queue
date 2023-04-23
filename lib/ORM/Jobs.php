@@ -3,10 +3,8 @@
 namespace Task\Queue\ORM;
 
 use Exception;
-use InvalidArgumentException;
 
 use Task\Queue\Interfaces\ORM\IJob;
-use Task\Queue\Service\DTO\ORM\Job;
 
 use Bitrix\Main\{Entity, ArgumentException, ObjectPropertyException, SystemException};
 use Bitrix\Main\Type\Date;
@@ -68,33 +66,6 @@ class JobsTable extends Base
             static::FIELD_PARAMS => serialize($dto->getParameters()),
             static::FIELD_DATE_UPDATE => $dto->getDateUpdate(),
             static::FIELD_DATE_CREATE => $dto->getDateCreate(),
-        ];
-
-        return parent::add($fields);
-    }
-
-    /**
-     * Добавление новой задачи.
-     *
-     * @param array $data
-     * @return AddResult
-     * @throws Exception
-     */
-    public static function add(array $data = []): AddResult
-    {
-        if (empty($data['task'])) {
-            throw new InvalidArgumentException('The task object was not found');
-        }
-
-        if (!isset($data['params']) || !is_array($data['params'])) {
-            $data['params'] = [];
-        }
-
-        $fields = [
-            static::FIELD_TASK => $data['task'],
-            static::FIELD_PARAMS => serialize($data['params']),
-            static::FIELD_DATE_UPDATE => new Date(),
-            static::FIELD_DATE_CREATE => new Date(),
         ];
 
         return parent::add($fields);

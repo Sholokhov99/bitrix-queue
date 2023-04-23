@@ -2,6 +2,7 @@
 
 namespace Task\Queue\Interfaces\ORM;
 
+use Bitrix\Main\ORM\Data\DeleteResult;
 use Bitrix\Main\ORM\Data\AddResult;
 use Bitrix\Main\ORM\Query\Filter\ConditionTree as Filter;
 
@@ -29,7 +30,7 @@ interface IORM
      * @param array $filter
      * @return IJob|null
      */
-    public static function getFirst(array $filter): ?IJob;
+    public static function getFirst(array $filter = []): ?IJob;
 
     /**
      * Получение количество записей согласно фильтру.
@@ -39,4 +40,12 @@ interface IORM
      * @return int
      */
     public static function getCount($filter = [], array $cache = []): int;
+
+    /**
+     * Удаление записи по ID.
+     *
+     * @param int $primary
+     * @return DeleteResult
+     */
+    public static function delete($primary);
 }

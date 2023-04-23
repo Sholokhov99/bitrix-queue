@@ -2,7 +2,6 @@
 
 namespace Task\Queue\Service\Traits;
 
-use Bitrix\Main\Diag\Debug;
 use Task\Queue\ORM\JobsTable;
 use Task\Queue\Service\DTO\ORM\Job;
 use Task\Queue\Service\QueueManager;

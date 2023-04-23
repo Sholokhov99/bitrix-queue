@@ -12,7 +12,7 @@ use Task\Queue\Interfaces\Bus\IShouldQueue;
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
-class FakeJob implements IShouldQueue
+class FakeTask implements IShouldQueue
 {
     use Dispatchable;
 

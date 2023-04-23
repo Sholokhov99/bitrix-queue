@@ -6,11 +6,14 @@ use Task\Queue\Interfaces\ORM\IJob;
 use Task\Queue\Interfaces\ORM\IORM;
 use Task\Queue\Interfaces\Queue\IQueue;
 
+use Bitrix\Main\Error;
 use Bitrix\Main\ORM\Data\AddResult;
 use Bitrix\Main\ObjectNotFoundException;
 
 /**
  * Мастер работы с очередями.
+ *
+ * @see QueueManagerTest - Актуальные тесты объекта.
  *
  * @author Daniil Sholokhov <sholokhov.daniil@gmail.com>
  */
@@ -34,6 +37,8 @@ class QueueManager implements IQueue
     /**
      * Получение размера очереди.
      *
+     * @alias
+     * @link IORM::getCount()
      * @return int
      */
     public function size(): int
@@ -44,6 +49,8 @@ class QueueManager implements IQueue
     /**
      * Добавление новой задачи в очередь.
      *
+     * @alias
+     * @link IORM::append()
      * @param IJob $job
      * @return AddResult
      */
@@ -62,8 +69,10 @@ class QueueManager implements IQueue
     {
         $result = [];
 
-        foreach ($jobs as $job) {
+        foreach ($jobs as $key => $job) {
             if (! $job instanceof IJob) {
+                $error = new Error('Job not instanceof IJob. Key: ' . $key);
+                $result[] = (new AddResult())->addError($error);
                 continue;
             }
 
@@ -82,7 +91,10 @@ class QueueManager implements IQueue
     public function first(): IJob
     {
         $job = $this->entity::getFirst();
-        $this->checkJob($job);
+
+        if (null === $job) {
+            throw new ObjectNotFoundException('Queue is empty');
+        }
 
         return $job;
     }
@@ -96,23 +108,8 @@ class QueueManager implements IQueue
     public function pop(): IJob
     {
         $job = $this->first();
-        $this->checkJob($job);
         $this->entity::delete($job->getID());
 
         return $job;
-    }
-
-    /**
-     * Проверка задачи на доступность.
-     *
-     * @param IJob|null $job
-     * @return void
-     * @throws ObjectNotFoundException
-     */
-    protected function checkJob(?IJob $job)
-    {
-        if (null === $job) {
-            throw new ObjectNotFoundException('Queue is empty');
-        }
     }
 }
