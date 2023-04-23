@@ -10,6 +10,11 @@ use Task\Queue\Service\QueueManager;
 
 use Bitrix\Main\Result;
 
+/**
+ * Тестирование механизма запуска обработчиков задач.
+ *
+ * @author Daniil Sholohkov <sholokhov.daniil@gmail.com>
+ */
 class ProcessorTest extends TestCase
 {
     protected Processor $processor;
@@ -87,27 +92,42 @@ class ProcessorTest extends TestCase
     }
 
     /**
-     * Указание лимита выполнения задач натуральным числом.
+     * Указание лимита выполнения задач.
      *
+     * @dataProvider providerSetLimit
+     * @param int $limit
      * @return void
      */
-    public function testSetLimitNatural(): void
+    public function testSetLimit(int $limit): void
     {
-        $this->processor->setLimit(256);
-        $this->assertEquals(256, $this->processor->getLimit());
+        $this->processor->setLimit($limit);
+        $limit = max(0, $limit);
+        $this->assertEquals($limit, $this->processor->getLimit());
     }
 
     /**
-     * Указание отрицательного лимита.
+     * Набор данных, для указания лимита выполняемых задач.
      *
-     * @return void
+     * @return \int[][]
      */
-    public function testSetLimitNegative(): void
+    public function providerSetLimit()
     {
-        $this->processor->setLimit(-156);
-        $this->assertEquals(0, $this->processor->getLimit());
+        return [
+            [0],
+            [256],
+            [985],
+            [-15],
+            [256],
+            [15878852845]
+        ];
     }
 
+    /**
+     * Старт механизма вызова обработчиков задач.
+     *
+     * @param int $count
+     * @return void
+     */
     protected function executeCountShouldQueue(int $count)
     {
         while ($this->orm::$resources->count() < $count + 5) {
@@ -159,9 +179,9 @@ class ProcessorTest extends TestCase
      *
      * @param string $task
      * @param array $parameters
-     * @return $this
+     * @return void
      */
-    protected function setDefaultTaskJob(string $task = '', array $parameters = []): self
+    protected function setDefaultTaskJob(string $task = '', array $parameters = []): void
     {
         $task = trim($task);
 
@@ -171,7 +191,5 @@ class ProcessorTest extends TestCase
 
         $this->job->setTask($task);
         $this->job->setParameters($parameters);
-
-        return $this;
     }
 }

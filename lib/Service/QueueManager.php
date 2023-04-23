@@ -2,11 +2,11 @@
 
 namespace Task\Queue\Service;
 
-use Bitrix\Main\Error;
 use Task\Queue\Interfaces\ORM\IJob;
 use Task\Queue\Interfaces\ORM\IORM;
 use Task\Queue\Interfaces\Queue\IQueue;
 
+use Bitrix\Main\Error;
 use Bitrix\Main\ORM\Data\AddResult;
 use Bitrix\Main\ObjectNotFoundException;
 
