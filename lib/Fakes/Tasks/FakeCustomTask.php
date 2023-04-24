@@ -2,6 +2,8 @@
 
 namespace Task\Queue\Fakes\Tasks;
 
+use Bitrix\Main\Result;
+
 class FakeCustomTask
 {
     protected int $id;
@@ -14,13 +16,13 @@ class FakeCustomTask
         $this->name = $name;
     }
 
-    public static function staticHandler(int $id, string $name)
+    public static function staticHandler(int $id, string $name): Result
     {
-        return "It is static handler";
+        return (new Result())->setData(["It is static handler"]);
     }
 
-    public function haldler()
+    public function handle(): Result
     {
-        return 'It is handler';
+        return (new Result())->setData(['It is handler']);
     }
 }

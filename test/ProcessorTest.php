@@ -48,25 +48,34 @@ class ProcessorTest extends TestCase
     }
 
     /**
-     * Проверка механизма выполнения задач при лимите 10
-     * Все задачи имеют описание {@see IShouldQueue}
+     *  Проверка механизма выполнения задач при указании лимита.
+     *  Все задачи имеют описание {@see IShouldQueue}
      *
+     * @dataProvider providerExecuteCount
+     * @param int $limit
+     * @param int $actualLimit
      * @return void
      */
-    public function testExecuteTenShouldQueue(): void
+    public function testExecuteShouldQueue(int $limit, int $actualLimit): void
     {
-        $this->executeCountShouldQueue(10);
+        $this->executeCountShouldQueue($limit, $actualLimit);
     }
 
-    /**
-     * Проверка механизма выполнения при лимите 0
-     * Все задачи имеют описание {@see IShouldQueue}
-     *
-     * @return void
-     */
-    public function testExecuteZeroShouldQueue(): void
+    public function testExecuteShouldQueueNotImplemetsInterface(): void
     {
-        $this->executeCountShouldQueue(0);
+        $task = 'Task\\Queue\\Fakes\\Tasks\\FakeCustomTask';
+        $parameters = [55, 'UserName'];
+        $this->orm::$resources->clear();
+        $this->setDefaultTaskJob($task, $parameters);
+
+        $this->orm::append($this->job);
+        $result = $this->processor->execute();
+
+        $this->assertCount(2, $result);
+        $resultHandler = reset($result);
+        $this->assertEquals($resultHandler->getData(), ['It is handler']);
+
+        $this->checkIsLastQueueEmpty($result);
     }
 
     /**
@@ -78,15 +87,15 @@ class ProcessorTest extends TestCase
     {
         $parameters = [55, 'UserName'];
         $this->orm::$resources->clear();
-        $this->job->setTask('Task\\Queue\\Fakes\\Tasks\\FakeCustomTask::staticHandler');
-        $this->job->setParameters($parameters);
+        $this->setDefaultTaskJob('', $parameters);
 
         $this->orm::append($this->job);
 
         $result = $this->processor->execute();
 
         $this->assertCount(2, $result);
-        $this->assertEquals(reset($result), 'It is static handler');
+        $resultHandler = reset($result);
+        $this->assertEquals($resultHandler->getData(), ['It is static handler']);
 
         $this->checkIsLastQueueEmpty($result);
     }
@@ -110,7 +119,7 @@ class ProcessorTest extends TestCase
      *
      * @return \int[][]
      */
-    public function providerSetLimit()
+    public function providerSetLimit(): array
     {
         return [
             [0],
@@ -123,12 +132,30 @@ class ProcessorTest extends TestCase
     }
 
     /**
+     * Набор данных, для тестирования ограничения количества выполнения задач за один шаг.
+     *
+     * @return \int[][]
+     */
+    public function providerExecuteCount(): array
+    {
+        return [
+            [5, 5],
+            [156, 156],
+            [0, 0],
+            [-256, 0],
+            [-1, 0],
+            [985, 985]
+        ];
+    }
+
+    /**
      * Старт механизма вызова обработчиков задач.
      *
      * @param int $count
+     * @param int $actualCount
      * @return void
      */
-    protected function executeCountShouldQueue(int $count)
+    protected function executeCountShouldQueue(int $count, int $actualCount)
     {
         while ($this->orm::$resources->count() < $count + 5) {
             $this->orm::append($this->job);
@@ -136,7 +163,7 @@ class ProcessorTest extends TestCase
 
         $this->processor->setLimit($count);
         $results = $this->processor->execute();
-        $this->assertCount($count, $results);
+        $this->assertCount($actualCount, $results);
 
         foreach ($results as $result) {
             /**
