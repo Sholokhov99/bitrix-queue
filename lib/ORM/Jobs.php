@@ -7,7 +7,6 @@ use Exception;
 use Task\Queue\Interfaces\ORM\IJob;
 
 use Bitrix\Main\{Entity, ArgumentException, ObjectPropertyException, SystemException};
-use Bitrix\Main\Type\Date;
 use Bitrix\Main\ORM\Data\AddResult;
 
 /**

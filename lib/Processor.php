@@ -73,7 +73,7 @@ class Processor
     {
         $result = [];
         $start = microtime(true);
-        
+
         for ($index = $this->limit; $index > 0; $index--) {
             $errorMessage = "";
             $errorCode = 0;
@@ -107,8 +107,6 @@ class Processor
     /**
      * Получение лимита при выборке задач.
      *
-     * @see ProcessorTest::testGetLimit()
-     *
      * @return int
      */
     public function getLimit(): int
@@ -118,10 +116,6 @@ class Processor
 
     /**
      * Указание лимита при выборке задач.
-     *
-     * @see ProcessorTest::testSetLimit()
-     * @see ProcessorTest::testSetLimitNatural()
-     * @see ProcessorTest::testSetLimitNegative()
      *
      * @param int $value
      * @return $this
