@@ -53,7 +53,7 @@ $job = (new Job())->setTask(FakeCustomTask::class)
     ->setParameters([55, 'TestName']);
 
 $manager = new QueueManager(new JobsTable());
-$manager->push($job)
+$manager->push($job);
 ```
 Добавление через ORM:
 ```php
