@@ -67,14 +67,13 @@ class Processor
     /**
      * Запуск механизма выполнения задачи.
      *
-     * @return array
+     * @return Result[]
      */
     public function execute(): array
     {
         $result = [];
         $start = microtime(true);
-
-
+        
         for ($index = $this->limit; $index > 0; $index--) {
             $errorMessage = "";
             $errorCode = 0;
@@ -85,12 +84,9 @@ class Processor
             } catch (ObjectNotFoundException $exception) {
                 $result[] = (new Result())->setData([$exception->getMessage()]);
                 break;
-            } catch (Exception $exception) {
+            } catch (Exception |Error $exception) {
                 $errorMessage = $exception->getMessage();
                 $errorCode = $exception->getCode();
-            } catch (Error $error) {
-                $errorMessage = $error->getMessage();
-                $errorCode = $error->getCode();
             }
 
             if (!empty($errorMessage)) {
@@ -145,19 +141,17 @@ class Processor
      * Вызов механизма выполнения задачи.
      *
      * @param IJob $job
-     * @return mixed
+     * @return Result
      */
-    protected function call(IJob $job)
+    protected function call(IJob $job): Result
     {
         $task = $job->getTask();
 
-        if (is_a($task, IShouldQueue::class, true)) {
+        if ($this->isShouldQueue($task)) {
             return $this->callShouldQueue($job);
-        } elseif (is_callable($task)) {
-            return call_user_func_array($task, $job->getParameters());
+        } else {
+            return $this->callableHandle($task, $job->getParameters());
         }
-
-        throw new RuntimeException('Invalid task handler');
     }
 
     /**
@@ -168,17 +162,17 @@ class Processor
      */
     protected function callShouldQueue(IJob $job): Result
     {
-        $task = $this->getTaskQueue($job);
-        return $task->handle();
+        $callable = [$this->getTaskQueue($job), 'handle'];
+        return $this->callableHandle($callable);
     }
 
     /**
      * Вызов пользовательского обработчика задачи.
      *
      * @param IJob $job
-     * @return IShouldQueue
+     * @return mixed
      */
-    protected function getTaskQueue(IJob $job): IShouldQueue
+    protected function getTaskQueue(IJob $job)
     {
         $task = $job->getTask();
 
@@ -187,6 +181,42 @@ class Processor
         }
 
         throw new RuntimeException('Task queue not found');
+    }
+
+    /**
+     * Вызов метода обработчика.
+     *
+     * @param string|array $callable
+     * @param array $arguments
+     * @return Result
+     */
+    protected function callableHandle($callable, array $arguments = []): Result
+    {
+        if (!is_callable($callable)) {
+            throw new RuntimeException('Invalid task handler');
+        }
+
+        $result = call_user_func_array($callable, $arguments);
+
+        if (! $result instanceof Result) {
+            throw new RuntimeException('The task handler returned an incorrect data format');
+        }
+
+        return $result;
+    }
+
+    /**
+     * Проверка реализации обработчика, которое описывает абстракция {@see IShouldQueue}
+     *
+     * @param string $task
+     * @return bool
+     */
+    protected function isShouldQueue(string $task): bool
+    {
+        $implementInterface = is_a($task, IShouldQueue::class, true);
+        $executionInterface = class_exists($task) && is_callable($task, 'handle');
+
+        return $implementInterface || $executionInterface;
     }
 
     /**
