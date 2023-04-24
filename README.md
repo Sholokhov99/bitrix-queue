@@ -71,16 +71,16 @@ JobsTable::append($job);
 
 В Task передается имя класса, который должен реализовывать абстрацию Task\Queue\Interfaces\Bus\IShouldQueue
 ```php
-\Task\Queue\Fakes\FakeTask
+Task\Queue\Fakes\FakeTask
 ```
 
 В Task можно и передать имя класса, который не реализовывает абстракцию Task\Queue\Interfaces\Bus\IShouldQueue.
 В данном случае будет попытка объявить класс и вызвать функцию <b>handle</b>. Если все попытки не дадут результата, то задача отправится в список ошибочных задач.
 ```php
-\Task\Queue\Fakes\Tasks\FakeCustomTask
+Task\Queue\Fakes\Tasks\FakeCustomTask
 ```
 
 В Task можно передавать вызов статических функций, которые в последствии будут вызваны.
 ```php
-\Task\Queue\Fakes\Tasks\FakeCustomTask::staticHandler
+Task\Queue\Fakes\Tasks\FakeCustomTask::staticHandler
 ```
