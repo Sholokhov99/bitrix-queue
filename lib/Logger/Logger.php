@@ -98,7 +98,7 @@ class Logger extends AbstractLogger
             'AUDIT_TYPE_ID' => static::class,
             'ITEM_ID' => $this->getPath(),
             'MODULE_ID' => Application::getInstance()->getModuleID(),
-            'DESCRIPTION' => $throwable->getMessage() . "\n" . implode("\n", $throwable->getTrace()),
+            'DESCRIPTION' => $throwable->getMessage() . PHP_EOL . implode(PHP_EOL, $throwable->getTrace()),
         ]);
     }
 
