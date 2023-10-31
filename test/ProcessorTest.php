@@ -1,12 +1,12 @@
 <?php
 
-namespace Task\Queue;
+namespace Sholokhov\Broker;
 
 use PHPUnit\Framework\TestCase;
 
-use Task\Queue\Fakes;
-use Task\Queue\Interfaces\Bus\IShouldQueue;
-use Task\Queue\Service\QueueManager;
+use Sholokhov\Broker\Fakes;
+use Sholokhov\Broker\Interfaces\Bus\IShouldQueue;
+use Sholokhov\Broker\Service\QueueManager;
 
 use Bitrix\Main\Result;
 

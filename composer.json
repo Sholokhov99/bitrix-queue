@@ -1,0 +1,8 @@
+{
+  "name": "sholokhov/broker",
+  "description": "Механизм обработки очередей",
+  "require": {
+    "php": ">=8.1",
+    "another-vendor/package": "1.*"
+  }
+}

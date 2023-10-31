@@ -1,13 +1,13 @@
 <?php
 
-namespace Task\Queue\Service;
+namespace Sholokhov\Broker\Service;
 
 use PHPUnit\Framework\TestCase;
 
-use Task\Queue\ORM\JobsTable;
-use Task\Queue\Fakes\DTO\FakeJob;
-use Task\Queue\Fakes\ORM\FakeORM;
-use Task\Queue\Interfaces\ORM\IJob;
+use Sholokhov\Broker\ORM\JobsTable;
+use Sholokhov\Broker\Fakes\DTO\FakeJob;
+use Sholokhov\Broker\Fakes\ORM\FakeORM;
+use Sholokhov\Broker\Interfaces\ORM\IJob;
 
 use Bitrix\Main\ORM\Data\AddResult;
 use Bitrix\Main\ObjectNotFoundException;

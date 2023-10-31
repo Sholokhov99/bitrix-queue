@@ -1,6 +1,6 @@
 <?php
 
-namespace Task\Queue\Service\Collections;
+namespace Sholokhov\Broker\Service\Collections;
 
 use RuntimeException;
 
